@@ -6,7 +6,7 @@ import pretrainedmodels
 from torch import nn
 from torch.nn import functional as F
 import torchvision.models as M
-from efficientnet_pytorch import EfficientNet
+# from efficientnet_pytorch import EfficientNet
 
 from .utils import ON_KAGGLE
 
@@ -91,28 +91,28 @@ class Swish(nn.Module):
         return x * torch.sigmoid(x)
 
 
-def get_efficientnet(arch: str = "efficientnet-b3", n_classes: int = 1103, pretrained=True):
-    if pretrained == True:
-        base_model = EfficientNet.from_pretrained(arch)
-    else:
-        base_model = EfficientNet.from_name(arch)
-    # print(base_model)
-    print(len(base_model._blocks))
-    model = nn.Sequential(
-        nn.Sequential(
-            base_model._conv_stem,
-            base_model._bn0,
-            Swish(),
-            *base_model._blocks[:20]
-        ),
-        nn.Sequential(*base_model._blocks[20:]),
-        nn.Sequential(
-            base_model._conv_head,
-            base_model._bn1,
-            Swish(),
-            *get_head(base_model._fc.in_features, n_classes)[1:],
-        )
-    )
-    print(" | ".join([
-        "{:,d}".format(np.sum([p.numel() for p in x.parameters()])) for x in model]))
-    return model
+# def get_efficientnet(arch: str = "efficientnet-b3", n_classes: int = 1103, pretrained=True):
+#     if pretrained == True:
+#         base_model = EfficientNet.from_pretrained(arch)
+#     else:
+#         base_model = EfficientNet.from_name(arch)
+#     # print(base_model)
+#     print(len(base_model._blocks))
+#     model = nn.Sequential(
+#         nn.Sequential(
+#             base_model._conv_stem,
+#             base_model._bn0,
+#             Swish(),
+#             *base_model._blocks[:20]
+#         ),
+#         nn.Sequential(*base_model._blocks[20:]),
+#         nn.Sequential(
+#             base_model._conv_head,
+#             base_model._bn1,
+#             Swish(),
+#             *get_head(base_model._fc.in_features, n_classes)[1:],
+#         )
+#     )
+#     print(" | ".join([
+#         "{:,d}".format(np.sum([p.numel() for p in x.parameters()])) for x in model]))
+#     return model

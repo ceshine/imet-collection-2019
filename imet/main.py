@@ -24,7 +24,7 @@ from helperbot import (
 )
 
 from .adabound import AdaBound
-from .models import get_seresnet_model, get_densenet_model, get_efficientnet
+from .models import get_seresnet_model, get_densenet_model
 from .dataset import TrainDataset, TestDataset, get_ids, N_CLASSES, DATA_ROOT
 from .transforms import train_transform, test_transform
 from .utils import ON_KAGGLE
@@ -158,14 +158,18 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
         # snapshot_interval=snapshot_or_not,
         early_stopping_cnt=args.early_stop,
         min_improv=1e-3,
+        keep_n_snapshots=1
     )
-    bot.remove_checkpoints(keep=1)
     bot.load_model(bot.best_performers[0][1])
-    torch.save(bot.model.state_dict(), CACHE_DIR /
-               f"stage2_{args.fold}.pth")
     bot.remove_checkpoints(keep=0)
 
+    # Final model
     torch.save(bot.model, MODEL_DIR / f"final_{args.fold}.pth")
+    # Failover (args + state dict)
+    torch.save(
+        [args.arch, bot.model.state_dict()],
+        MODEL_DIR / f"failover_{args.arch}_{args.fold}.pth"
+    )
 
 
 def find_best_fbeta_threshold(truth, probs, beta=2, step=0.05):
@@ -294,8 +298,8 @@ def main():
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
         elif args.arch.startswith("densenet"):
             model = get_densenet_model(arch=args.arch)
-        elif args.arch.startswith("efficientnet"):
-            model = get_efficientnet(arch=args.arch)
+        # elif args.arch.startswith("efficientnet"):
+        #     model = get_efficientnet(arch=args.arch)
         else:
             raise ValueError("No such model")
         if use_cuda:
