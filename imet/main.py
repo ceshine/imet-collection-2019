@@ -157,7 +157,7 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
         snapshot_interval=len(train_loader) // 2,
         # snapshot_interval=snapshot_or_not,
         early_stopping_cnt=args.early_stop,
-        min_improv=1e-3,
+        min_improv=1e-4,
         keep_n_snapshots=1
     )
     bot.load_model(bot.best_performers[0][1])
