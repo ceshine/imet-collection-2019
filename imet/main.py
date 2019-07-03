@@ -24,7 +24,7 @@ from helperbot import (
 )
 
 from .adabound import AdaBound
-from .models import get_seresnet_model, get_densenet_model
+from .models import get_seresnet_model, get_densenet_model, get_seresnet_partial_model
 from .dataset import TrainDataset, TestDataset, get_ids, N_CLASSES, DATA_ROOT
 from .transforms import train_transform, test_transform
 from .utils import ON_KAGGLE
@@ -295,6 +295,10 @@ def main():
         elif args.arch == 'seresnext101':
             model = get_seresnet_model(
                 arch="se_resnext101_32x4d",
+                n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
+        elif args.arch == 'seresnext50-partial':
+            model = get_seresnet_partial_model(
+                arch="se_resnext50_32x4d",
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
         elif args.arch.startswith("densenet"):
             model = get_densenet_model(arch=args.arch)

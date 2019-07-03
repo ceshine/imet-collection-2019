@@ -8,6 +8,7 @@ from torch.nn import functional as F
 import torchvision.models as M
 # from efficientnet_pytorch import EfficientNet
 
+from . import seresnet_partial
 from .utils import ON_KAGGLE
 
 
@@ -62,6 +63,18 @@ def get_head(nf: int, n_classes):
 
 def get_seresnet_model(arch: str = "se_resnext101_32x4d", n_classes: int = 1103, pretrained=True):
     full = pretrainedmodels.__dict__[arch](
+        pretrained='imagenet' if pretrained else None)
+    model = nn.Sequential(
+        nn.Sequential(full.layer0, full.layer1, full.layer2, full.layer3[:3]),
+        nn.Sequential(full.layer3[3:], full.layer4),
+        get_head(2048, n_classes))
+    print(" | ".join([
+        "{:,d}".format(np.sum([p.numel() for p in x.parameters()])) for x in model]))
+    return model
+
+
+def get_seresnet_partial_model(arch: str = "se_resnext101_32x4d", n_classes: int = 1103, pretrained=True):
+    full = seresnet_partial.__dict__[arch](
         pretrained='imagenet' if pretrained else None)
     model = nn.Sequential(
         nn.Sequential(full.layer0, full.layer1, full.layer2, full.layer3[:3]),
