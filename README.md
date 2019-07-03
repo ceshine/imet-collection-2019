@@ -22,6 +22,18 @@ Directly taken from [requirements.txt](requirements.txt) (they're also in [setup
 cd pytorch_helper_bot && pip install .
 ```
 
+## Environments
+
+I trained all my models using Kaggle Kernel. Example public kernels can be found at:
+
+* [Trainer](https://www.kaggle.com/ceshine/imet-trainer)
+* [Validation (with TTA)](https://www.kaggle.com/ceshine/imet-validation-kernel-public)
+* [Inference](https://www.kaggle.com/ceshine/imet-inference-kernel-public) - Private score *0.614* with 3 models (already in bronze range).
+
+One drawback of Kaggle Kernel is that it's hard to control the version of PyTorch. My models trained during competition were trained with PyTorch 1.0, but the model cannot be loaded in the post-competition kernels due to this [compatibility issue](https://github.com/pytorch/pytorch/issues/20756). (The issue was fixed in the PyTorch master branch, but has not been released yet at the time of writing.)
+
+To avoid this kind of hassles in the future, I started to keep two versions of trained model: one which contains fully pickled model using `torch.save(model, f'final_{fold}.pth')` to speed up experiment iteration; and one which has only model weights and the name of the architecture as a failover using `torch.save([args.arch, model.state_dict()], f'failover_{args.arch}_{fold}.pth')`.
+
 ## Instructions
 
 ### Making K-Fold validation sets
@@ -40,4 +52,26 @@ Example:
 
 ```
 python -m imet.main train --batch-size 48 --epochs 11 --fold 0 --arch seresnext101 --early-stop 4
+```
+
+### Evaluating model (with TTA)
+
+Example:
+
+```
+python -m imet.main validate --fold 0 --batch-size 256 --tta 4 --model .
+```
+
+### Making Predictions (with TTA)
+
+Example:
+
+```
+python -m imet.main predict_test --batch-size 256 --fold 0 --tta 5 --model ./seresnext50/
+```
+
+Then create a submission file (this one only uses predictions from three models):
+
+```
+python -m imet.make_submission test_0 test_1 test_2 --threshold 0.09
 ```
