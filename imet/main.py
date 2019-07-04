@@ -26,7 +26,7 @@ from helperbot import (
 from .adabound import AdaBound
 from .models import get_seresnet_model, get_densenet_model, get_seresnet_partial_model
 from .dataset import TrainDataset, TestDataset, get_ids, N_CLASSES, DATA_ROOT
-from .transforms import train_transform, test_transform
+from .transforms import get_train_transform, test_transform, cv2
 from .utils import ON_KAGGLE
 from .loss import FocalLoss
 
@@ -287,6 +287,7 @@ def main():
             valid_fold = valid_fold[:args.limit]
 
     use_cuda = cuda.is_available()
+    train_transform = get_train_transform(cv2.BORDER_REFLECT_101)
     if args.mode == 'train':
         if args.arch == 'seresnext50':
             model = get_seresnet_model(
@@ -297,6 +298,7 @@ def main():
                 arch="se_resnext101_32x4d",
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
         elif args.arch == 'seresnext50-partial':
+            train_transform = get_train_transform(cv2.BORDER_CONSTANT)
             model = get_seresnet_partial_model(
                 arch="se_resnext50_32x4d",
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)

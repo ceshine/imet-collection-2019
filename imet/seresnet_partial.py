@@ -5,10 +5,11 @@ https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/pretra
 from collections import OrderedDict
 import math
 
+import numpy as np
 import torch.nn as nn
 from torch.utils import model_zoo
 
-from .partialconv2d import PartialConv2d
+from partialconv2d import PartialConv2d
 
 __all__ = ['SENet', 'senet154', 'se_resnet50', 'se_resnet101', 'se_resnet152',
            'se_resnext50_32x4d', 'se_resnext101_32x4d']
@@ -82,17 +83,29 @@ pretrained_settings = {
     },
 }
 
+ZERO_TRANSFORMED = np.sum(
+    np.array([0.485, 0.456, 0.406]) / np.array([0.229, 0.224, 0.225])) * -1
+
+
+class FirstPartialConv2d(PartialConv2d):
+    def forward(self, input, mask_in=None):
+        eps = 1e-4
+        mask = (input.sum(dim=1, keepdim=True) >
+                ZERO_TRANSFORMED + eps).float()
+        # print("%.4f" % (mask.sum() / input.size(3) / input.size(2) / input.size(0)))
+        return super().forward(input, mask_in=mask)
+
 
 class SEModule(nn.Module):
 
     def __init__(self, channels, reduction):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc1 = PartialConv2d(channels, channels // reduction, kernel_size=1,
-                                 padding=0)
+        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
+                             padding=0)
         self.relu = nn.ReLU(inplace=True)
-        self.fc2 = PartialConv2d(channels // reduction, channels, kernel_size=1,
-                                 padding=0)
+        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
+                             padding=0)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -142,15 +155,15 @@ class SEBottleneck(Bottleneck):
     def __init__(self, inplanes, planes, groups, reduction, stride=1,
                  downsample=None):
         super(SEBottleneck, self).__init__()
-        self.conv1 = PartialConv2d(
+        self.conv1 = nn.Conv2d(
             inplanes, planes * 2, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes * 2)
         self.conv2 = PartialConv2d(planes * 2, planes * 4, kernel_size=3,
                                    stride=stride, padding=1, groups=groups,
                                    bias=False)
         self.bn2 = nn.BatchNorm2d(planes * 4)
-        self.conv3 = PartialConv2d(planes * 4, planes * 4, kernel_size=1,
-                                   bias=False)
+        self.conv3 = nn.Conv2d(planes * 4, planes * 4, kernel_size=1,
+                               bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
         self.se_module = SEModule(planes * 4, reduction=reduction)
@@ -169,13 +182,13 @@ class SEResNetBottleneck(Bottleneck):
     def __init__(self, inplanes, planes, groups, reduction, stride=1,
                  downsample=None):
         super(SEResNetBottleneck, self).__init__()
-        self.conv1 = PartialConv2d(inplanes, planes, kernel_size=1, bias=False,
-                                   stride=stride)
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False,
+                               stride=stride)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = PartialConv2d(planes, planes, kernel_size=3, padding=1,
                                    groups=groups, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = PartialConv2d(
+        self.conv3 = nn.Conv2d(
             planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
@@ -194,13 +207,13 @@ class SEResNeXtBottleneck(Bottleneck):
                  downsample=None, base_width=4):
         super(SEResNeXtBottleneck, self).__init__()
         width = math.floor(planes * (base_width / 64)) * groups
-        self.conv1 = PartialConv2d(inplanes, width, kernel_size=1, bias=False,
-                                   stride=1)
+        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, bias=False,
+                               stride=1)
         self.bn1 = nn.BatchNorm2d(width)
         self.conv2 = PartialConv2d(width, width, kernel_size=3, stride=stride,
                                    padding=1, groups=groups, bias=False)
         self.bn2 = nn.BatchNorm2d(width)
-        self.conv3 = PartialConv2d(
+        self.conv3 = nn.Conv2d(
             width, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
@@ -261,8 +274,8 @@ class SENet(nn.Module):
         self.inplanes = inplanes
         if input_3x3:
             layer0_modules = [
-                ('conv1', PartialConv2d(3, 64, 3, stride=2, padding=1,
-                                        bias=False)),
+                ('conv1', FirstPartialConv2d(3, 64, 3, stride=2, padding=1,
+                                             bias=False)),
                 ('bn1', nn.BatchNorm2d(64)),
                 ('relu1', nn.ReLU(inplace=True)),
                 ('conv2', PartialConv2d(64, 64, 3, stride=1, padding=1,
@@ -276,8 +289,8 @@ class SENet(nn.Module):
             ]
         else:
             layer0_modules = [
-                ('conv1', PartialConv2d(3, inplanes, kernel_size=7, stride=2,
-                                        padding=3, bias=False)),
+                ('conv1', FirstPartialConv2d(3, inplanes, kernel_size=7, stride=2,
+                                             padding=3, bias=False)),
                 ('bn1', nn.BatchNorm2d(inplanes)),
                 ('relu1', nn.ReLU(inplace=True)),
             ]
