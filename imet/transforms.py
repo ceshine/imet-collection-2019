@@ -18,7 +18,7 @@ cv2.setNumThreads(0)
 
 
 def get_train_transform(border_mode):
-    train_transform_reflect = Compose([
+    return Compose([
         # PadIfNeeded(256, 256, border_mode=cv2.BORDER_CONSTANT., value=0, p=1.),
         # ShiftScaleRotate(
         #     shift_limit=0.0625, scale_limit=0.1, rotate_limit=30,

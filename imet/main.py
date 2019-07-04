@@ -310,8 +310,8 @@ def main():
             raise ValueError("No such model")
         if use_cuda:
             model = model.cuda()
-        criterion = nn.BCEWithLogitsLoss()
-        # criterion = FocalLoss(gamma=2)
+        # criterion = nn.BCEWithLogitsLoss()
+        criterion = FocalLoss(gamma=1.5, alpha=0.75)
         (CACHE_DIR / 'params.json').write_text(
             json.dumps(vars(args), indent=4, sort_keys=True))
 

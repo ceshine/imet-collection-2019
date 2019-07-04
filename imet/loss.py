@@ -6,24 +6,35 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2):
-        super().__init__()
+    """Adapted from: https://github.com/kuangliu/pytorch-retinanet/blob/master/loss.py
+    F.logsimoid used as in https://gist.github.com/AdrienLE/bf31dfe94569319f6e47b2de8df13416#file-focal_dice_1-py
+    """
+
+    def __init__(self, alpha, gamma):
+        super(FocalLoss, self).__init__()
+        assert alpha > 0 and alpha < 1
+        self.alpha = alpha
         self.gamma = gamma
 
-    def forward(self, preds, target):
-        if not (target.size() == preds.size()):
-            raise ValueError("Target size ({}) must be the same as input size ({})"
-                             .format(target.size(), preds.size()))
-        max_val = (-preds).clamp(min=0)
-        loss = (
-            preds - preds * target + max_val +
-            ((-max_val).exp() + (-preds - max_val).exp()).log()
-        )
+    def forward(self, x, y):
+        '''Focal loss.
+        Args:
+          x: (tensor) sized [N,].
+          y: (tensor) sized [N,].
+        Return:
+          (tensor) focal loss.
+        '''
+        y = y.float()
+        pt_log = F.logsigmoid(-x * (y * 2 - 1))
+        # w = alpha if t > 0 else 1-alpha
+        at = (self.alpha * y + (1-self.alpha) * (1-y)) * 2
+        w = at * (pt_log * self.gamma).exp()
+        # Don't calculate gradients of the weights
+        w = w.detach()
+        return F.binary_cross_entropy_with_logits(x, y, w, reduction="mean")
 
-        invprobs = F.logsigmoid(-preds * (target * 2.0 - 1.0))
-        loss = (invprobs * self.gamma).exp() * loss
-
-        return loss.sum(dim=1).mean()
+    def __str__(self):
+        return f"<Focal Loss alpha={self.alpha} gamma={self.gamma}>"
 
 
 class FbetaLoss(nn.Module):
