@@ -97,6 +97,7 @@ def train_stage_one(args, model, train_loader, valid_loader, criterion):
         ],
         pbar=not ON_KAGGLE, use_tensorboard=False
     )
+    bot.logger.info(bot.criterion)
     bot.train(
         n_steps,
         log_interval=len(train_loader) // 10,
@@ -140,6 +141,7 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
         ],
         pbar=not ON_KAGGLE, use_tensorboard=not ON_KAGGLE
     )
+    bot.logger.info(bot.criterion)
     bot.model.load_state_dict(torch.load(
         CACHE_DIR / f"stage1_{args.fold}.pth"))
 
@@ -272,6 +274,8 @@ def main():
     arg('--min-samples', type=int, default=0)
     arg('--debug', action='store_true')
     arg('--limit', type=int)
+    arg('--alpha', type=float, default=.5)
+    arg('--gamma', type=float, default=.25)
     arg('--fold', type=int, default=0)
     arg('--model', type=str, default=".")
     arg('--early-stop', type=int, default=5)
@@ -311,7 +315,7 @@ def main():
         if use_cuda:
             model = model.cuda()
         # criterion = nn.BCEWithLogitsLoss()
-        criterion = FocalLoss(gamma=1.5, alpha=0.75)
+        criterion = FocalLoss(gamma=args.gamma, alpha=args.alpha)
         (CACHE_DIR / 'params.json').write_text(
             json.dumps(vars(args), indent=4, sort_keys=True))
 
