@@ -54,23 +54,6 @@ class TestDataset(Dataset):
         return image, 0
 
 
-class TTADataset:
-    def __init__(self, root: Path, df: pd.DataFrame,
-                 image_transform: Callable, tta: int):
-        self._root = root
-        self._df = df
-        self._image_transform = image_transform
-        self._tta = tta
-
-    def __len__(self):
-        return len(self._df) * self._tta
-
-    def __getitem__(self, idx):
-        item = self._df.iloc[idx % len(self._df)]
-        image = load_transform_image(item, self._root, self._image_transform)
-        return image, item.id
-
-
 def load_transform_image(
         item, root: Path, image_transform: Callable, debug: bool = False):
     image = load_image(item, root)

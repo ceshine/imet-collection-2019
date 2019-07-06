@@ -26,7 +26,7 @@ from helperbot import (
 from .adabound import AdaBound
 from .models import get_seresnet_model, get_densenet_model, get_seresnet_partial_model
 from .dataset import TrainDataset, TestDataset, get_ids, N_CLASSES, DATA_ROOT
-from .transforms import get_train_transform, test_transform, cv2
+from .transforms import get_train_transform, get_test_transform, cv2
 from .utils import ON_KAGGLE
 from .loss import FocalLoss
 
@@ -200,7 +200,7 @@ def print_eval(truth, preds):
     print(f"loss: {log_loss(truth, preds) / preds.shape[1]:.8f}")
 
 
-def eval_model(args, valid_loader):
+def eval_model(args, valid_loaders: List[DataLoader]):
     model_dir = MODEL_DIR / args.model
     model = torch.load(str(model_dir / f"final_{args.fold}.pth"))
     model = model.cuda()
@@ -211,7 +211,7 @@ def eval_model(args, valid_loader):
         pbar=not ON_KAGGLE, avg_window=100
     )
     tmp = []
-    for _ in range(args.tta):
+    for valid_loader in valid_loaders:
         preds, truth = bot.predict(valid_loader, return_y=True)
         preds = torch.sigmoid(preds)
         tmp.append(preds.numpy())
@@ -229,7 +229,7 @@ def eval_model(args, valid_loader):
         )
 
 
-def predict_model(args, df: pd.DataFrame, loader: DataLoader, name: str):
+def predict_model(args, df: pd.DataFrame, loaders: List[DataLoader], name: str):
     model_dir = MODEL_DIR / args.model
     model = torch.load(str(model_dir / f"final_{args.fold}.pth"))
     model = model.cuda()
@@ -241,7 +241,7 @@ def predict_model(args, df: pd.DataFrame, loader: DataLoader, name: str):
     )
     tmp = []
     model_dir = MODEL_DIR / args.model
-    for _ in range(args.tta):
+    for loader in loaders:
         preds = bot.predict(loader, return_y=False)
         preds = torch.sigmoid(preds)
         tmp.append(preds.numpy())
@@ -292,6 +292,7 @@ def main():
 
     use_cuda = cuda.is_available()
     train_transform = get_train_transform(cv2.BORDER_REFLECT_101)
+    test_transform = get_test_transform()
     if args.mode == 'train':
         if args.arch == 'seresnext50':
             model = get_seresnet_model(
@@ -334,26 +335,41 @@ def main():
         train_stage_two(args, model, train_loader, valid_loader, criterion)
 
     elif args.mode == 'validate':
-        valid_loader = make_loader(
-            args, TrainDataset, train_root,
-            valid_fold, test_transform, shuffle=False, drop_last=False)
-        eval_model(args, valid_loader)
+        valid_loaders = [
+            make_loader(
+                args, TrainDataset, train_root,
+                valid_fold, get_test_transform(), shuffle=False, drop_last=False),
+            make_loader(
+                args, TrainDataset, train_root,
+                valid_fold, get_test_transform(flip=True), shuffle=False, drop_last=False)
+        ]
+        eval_model(args, valid_loaders)
     elif args.mode.startswith('predict'):
         if args.mode == 'predict_valid':
-            loader = make_loader(
-                args, TestDataset, train_root, valid_fold,
-                test_transform, shuffle=False)
-            predict_model(args, valid_fold, loader, "valid")
+            loaders = [
+                make_loader(
+                    args, TestDataset, train_root,
+                    valid_fold, get_test_transform(), shuffle=False, drop_last=False),
+                make_loader(
+                    args, TestDataset, train_root,
+                    valid_fold, get_test_transform(flip=True), shuffle=False, drop_last=False)
+            ]
+            predict_model(args, valid_fold, loaders, "valid")
         elif args.mode == 'predict_test':
             test_root = DATA_ROOT / 'test'
             df_test = pd.read_csv(DATA_ROOT / 'sample_submission.csv')
             if args.limit:
                 df_test = df_test[:args.limit]
             print(df_test.shape)
-            loader = make_loader(
-                args, TestDataset, test_root, df_test,
-                test_transform, shuffle=False, drop_last=False)
-            predict_model(args, df_test, loader, "test")
+            loaders = [
+                make_loader(
+                    args, TestDataset, test_root, df_test,
+                    get_test_transform(), shuffle=False, drop_last=False),
+                make_loader(
+                    args, TestDataset, test_root, df_test,
+                    get_test_transform(flip=True), shuffle=False, drop_last=False)
+            ]
+            predict_model(args, df_test, loaders, "test")
 
 
 def binarize_prediction(probabilities, threshold: float, argsorted=None,
