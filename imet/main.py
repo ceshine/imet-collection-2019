@@ -117,9 +117,9 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
                 torch.optim.Adam, weight_decay=0
                 # AdaBound, weight_decay=0, gamma=1/5000, betas=(.8, .999)
                 # torch.optim.SGD, momentum=0.9
-            ), model, [1e-5, 8e-5, 5e-4], [1., 1., 1.]
+            ), model, [1e-5, 1e-4, 3e-4], [1., 1., 1.]
         ), weight_decay=5e-2, change_with_lr=True)
-    freeze_layers(model, [False, False, False])
+    freeze_layers(model, [True, False, False])
     bot = ImageClassificationBot(
         model=model, train_loader=train_loader,
         val_loader=valid_loader, clip_grad=10.,
@@ -128,14 +128,15 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
         avg_window=len(train_loader) // 15,
         callbacks=[
             LearningRateSchedulerCallback(
-                TriangularLR(
-                    optimizer, 100, ratio=4, steps_per_cycle=n_steps
-                )
-                # GradualWarmupScheduler(
-                # optimizer, 100, len(train_loader),
-                # after_scheduler=CosineAnnealingLR(
-                #     optimizer, n_steps - len(train_loader)
+                # TriangularLR(
+                #     optimizer, 100, ratio=4, steps_per_cycle=n_steps
                 # )
+                GradualWarmupScheduler(
+                    optimizer, 100, len(train_loader) * 3,
+                    after_scheduler=CosineAnnealingLR(
+                        optimizer, n_steps - len(train_loader) * 3
+                    )
+                )
             ),
             MixUpCallback(alpha=0.2)
         ],

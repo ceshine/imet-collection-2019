@@ -65,8 +65,9 @@ def get_seresnet_model(arch: str = "se_resnext101_32x4d", n_classes: int = 1103,
     full = pretrainedmodels.__dict__[arch](
         pretrained='imagenet' if pretrained else None)
     model = nn.Sequential(
-        nn.Sequential(full.layer0, full.layer1, full.layer2, full.layer3[:3]),
-        nn.Sequential(full.layer3[3:], full.layer4),
+        nn.Sequential(full.layer0, full.layer1, full.layer2,
+                      full.layer3, full.layer4[:2]),
+        nn.Sequential(full.layer4[2:]),
         get_head(2048, n_classes))
     print(" | ".join([
         "{:,d}".format(np.sum([p.numel() for p in x.parameters()])) for x in model]))
@@ -77,8 +78,8 @@ def get_seresnet_partial_model(arch: str = "se_resnext101_32x4d", n_classes: int
     full = seresnet_partial.__dict__[arch](
         pretrained='imagenet' if pretrained else None)
     model = nn.Sequential(
-        nn.Sequential(full.layer0, full.layer1, full.layer2, full.layer3[:3]),
-        nn.Sequential(full.layer3[3:], full.layer4),
+        nn.Sequential(full.layer0, full.layer1, full.layer2, full.layer3[:4]),
+        nn.Sequential(full.layer3[4:], full.layer4),
         get_head(2048, n_classes))
     print(" | ".join([
         "{:,d}".format(np.sum([p.numel() for p in x.parameters()])) for x in model]))
