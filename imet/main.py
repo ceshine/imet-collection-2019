@@ -118,8 +118,8 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
                 # AdaBound, weight_decay=0, gamma=1/5000, betas=(.8, .999)
                 # torch.optim.SGD, momentum=0.9
             ), model, [1e-5, 1e-4, 3e-4], [1., 1., 1.]
-        ), weight_decay=5e-2, change_with_lr=True)
-    freeze_layers(model, [True, False, False])
+        ), weight_decay=1e-1, change_with_lr=True)
+    freeze_layers(model, [False, False, False])
     bot = ImageClassificationBot(
         model=model, train_loader=train_loader,
         val_loader=valid_loader, clip_grad=10.,
