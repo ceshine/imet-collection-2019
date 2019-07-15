@@ -81,7 +81,7 @@ def train_stage_one(args, model, train_loader, valid_loader, criterion):
         torch.optim.Adam(model.parameters(), lr=2e-3),
         0.1
     )
-    freeze_layers(model, [True, True, False])
+    freeze_layers(model, [True, True, True, False])
 
     # stage 1
     n_steps = len(train_loader) // 2
@@ -117,9 +117,9 @@ def train_stage_two(args, model, train_loader, valid_loader, criterion):
                 torch.optim.Adam, weight_decay=0
                 # AdaBound, weight_decay=0, gamma=1/5000, betas=(.8, .999)
                 # torch.optim.SGD, momentum=0.9
-            ), model, [1e-5, 1e-4, 3e-4], [1., 1., 1.]
+            ), model, [1e-5, 3e-5, 1e-4, 3e-4], [1., 1., 1., 1.]
         ), weight_decay=1e-1, change_with_lr=True)
-    freeze_layers(model, [False, False, False])
+    freeze_layers(model, [True, False, False, False])
     bot = ImageClassificationBot(
         model=model, train_loader=train_loader,
         val_loader=valid_loader, clip_grad=10.,
