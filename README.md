@@ -28,7 +28,8 @@ I trained all my models using Kaggle Kernel. Example public kernels can be found
 
 * [Trainer](https://www.kaggle.com/ceshine/imet-trainer)
 * [Validation (with TTA)](https://www.kaggle.com/ceshine/imet-validation-kernel-public)
-* [Inference](https://www.kaggle.com/ceshine/imet-inference-kernel-public?scriptVersionId=16663008) - Private score *0.614* with 3 models (already in bronze range).
+* [Inference - 256x256](https://www.kaggle.com/ceshine/imet-inference-kernel-public?scriptVersionId=16663008) - Private score *0.614* with 3 models (already in bronze range).
+* [Inference - 320x320](https://www.kaggle.com/ceshine/imet-inference-kernel-public?scriptVersionId=17048642) - Private score *0.622* with 3 models.
 
 One drawback of Kaggle Kernel is that it's hard to control the version of PyTorch. My models trained during competition were trained with PyTorch 1.0, but the model cannot be loaded in the post-competition kernels due to this [compatibility issue](https://github.com/pytorch/pytorch/issues/20756). (The issue was fixed in the PyTorch master branch, but has not been released yet at the time of writing.)
 
