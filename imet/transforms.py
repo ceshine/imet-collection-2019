@@ -53,7 +53,7 @@ def get_train_transform(border_mode, size=320):
         ShiftScaleRotate(shift_limit=0.1, scale_limit=0.0,
                          rotate_limit=15, p=0.3),
         IAAAdditiveGaussianNoise(p=0.3),
-        RandomCropIfNeeded(size * 2, size * 2),
+        RandomCropIfNeeded(650, 650),
         Resize(size, size),
         # HueSaturationValue(hue_shift_limit=5, sat_shift_limit=20,
         #                    val_shift_limit=10, p=1.),
@@ -81,7 +81,7 @@ def get_test_transform(size=320, flip=True):
         #     RandomCrop(256, 256, p=0.9),
         #     CenterCrop(256, 256, p=0.1),
         # ], p=1.),
-        RandomCropIfNeeded(size * 2, size * 2),
+        RandomCropIfNeeded(650, 650),
         Resize(size, size),
     ]
     if flip:

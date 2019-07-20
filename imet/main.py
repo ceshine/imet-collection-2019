@@ -35,6 +35,8 @@ CACHE_DIR.mkdir(exist_ok=True, parents=True)
 MODEL_DIR = Path('.' if ON_KAGGLE else './data/cache/')
 MODEL_DIR.mkdir(exist_ok=True, parents=True)
 
+SIZE = 320
+
 
 def make_loader(args, ds_class, root, df: pd.DataFrame, image_transform, drop_last=False, shuffle=False) -> DataLoader:
     return DataLoader(
@@ -292,8 +294,8 @@ def main():
             valid_fold = valid_fold[:args.limit]
 
     use_cuda = cuda.is_available()
-    train_transform = get_train_transform(cv2.BORDER_REFLECT_101)
-    test_transform = get_test_transform()
+    train_transform = get_train_transform(cv2.BORDER_REFLECT_101, size=SIZE)
+    test_transform = get_test_transform(size=SIZE)
     if args.mode == 'train':
         if args.arch == 'seresnext50':
             model = get_seresnet_model(
@@ -304,7 +306,8 @@ def main():
                 arch="se_resnext101_32x4d",
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
         elif args.arch == 'seresnext50-partial':
-            train_transform = get_train_transform(cv2.BORDER_CONSTANT)
+            train_transform = get_train_transform(
+                cv2.BORDER_CONSTANT, size=SIZE)
             model = get_seresnet_partial_model(
                 arch="se_resnext50_32x4d",
                 n_classes=N_CLASSES, pretrained=True if args.mode == 'train' else False)
@@ -339,10 +342,10 @@ def main():
         valid_loaders = [
             make_loader(
                 args, TrainDataset, train_root,
-                valid_fold, get_test_transform(), shuffle=False, drop_last=False),
+                valid_fold, get_test_transform(size=SIZE), shuffle=False, drop_last=False),
             make_loader(
                 args, TrainDataset, train_root,
-                valid_fold, get_test_transform(flip=True), shuffle=False, drop_last=False)
+                valid_fold, get_test_transform(flip=True, size=SIZE), shuffle=False, drop_last=False)
         ]
         eval_model(args, valid_loaders)
     elif args.mode.startswith('predict'):
@@ -350,10 +353,10 @@ def main():
             loaders = [
                 make_loader(
                     args, TestDataset, train_root,
-                    valid_fold, get_test_transform(), shuffle=False, drop_last=False),
+                    valid_fold, get_test_transform(size=SIZE), shuffle=False, drop_last=False),
                 make_loader(
                     args, TestDataset, train_root,
-                    valid_fold, get_test_transform(flip=True), shuffle=False, drop_last=False)
+                    valid_fold, get_test_transform(flip=True, size=SIZE), shuffle=False, drop_last=False)
             ]
             predict_model(args, valid_fold, loaders, "valid")
         elif args.mode == 'predict_test':
@@ -365,10 +368,10 @@ def main():
             loaders = [
                 make_loader(
                     args, TestDataset, test_root, df_test,
-                    get_test_transform(), shuffle=False, drop_last=False),
+                    get_test_transform(size=SIZE), shuffle=False, drop_last=False),
                 make_loader(
                     args, TestDataset, test_root, df_test,
-                    get_test_transform(flip=True), shuffle=False, drop_last=False)
+                    get_test_transform(flip=True, size=SIZE), shuffle=False, drop_last=False)
             ]
             predict_model(args, df_test, loaders, "test")
 
