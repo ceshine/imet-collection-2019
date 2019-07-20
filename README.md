@@ -34,6 +34,15 @@ One drawback of Kaggle Kernel is that it's hard to control the version of PyTorc
 
 To avoid this kind of hassles in the future, I started to keep two versions of trained model: one which contains fully pickled model using `torch.save(model, f'final_{fold}.pth')` to speed up experiment iteration; and one which has only model weights and the name of the architecture as a failover using `torch.save([args.arch, model.state_dict()], f'failover_{args.arch}_{fold}.pth')`.
 
+### Freezing the first three (Resnet) layers
+
+The 10th place solution suggested that only training the last two (Renset) layers is sufficient to get good accuracies. This technique allow us to training se-resnext101 models in Kaggle Kernel with 320x320 images faster. (Otherwise the models will be underfit and underperformed relative to se-resnext50).
+
+The code that freezes the first three layers lives in the [*freezing*](https://github.com/ceshine/imet-collection-2019/tree/freezing) branch.
+
+* [3-model se-resnext101 Inference](https://www.kaggle.com/ceshine/imet-inference-kernel-public?scriptVersionId=17497470) - private 0.625
+* [8-model se-resnext101 Inference](https://www.kaggle.com/ceshine/imet-inference-kernel-public?scriptVersionId=17498665) - private 0.629 (near silver range)
+
 ## Instructions
 
 ### Making K-Fold validation sets
